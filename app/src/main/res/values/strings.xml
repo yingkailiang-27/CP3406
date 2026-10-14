@@ -1,3 +1,7 @@
 <resources>
-    <string name="app_name">MobileTech Utility App</string>
+    <string name="app_name">StudyDay</string>
+    <string name="notification_channel">Class reminders</string>
+    <string name="notification_channel_description">Upcoming weekly classes</string>
+    <string name="notification_title">Upcoming class</string>
+    <string name="notification_body">%1$s starts at %2$s%3$s</string>
 </resources>
