@@ -6,6 +6,16 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class PlannerRulesTest {
+    @Test fun deadlineBoundaryAndCompletedTasks() {
+        val now = LocalDateTime.of(2026, 10, 20, 23, 59)
+        val task = StudyTask("task", "Read", deadline = now.toString())
+        assertFalse(isTaskOverdue(task, now.minusMinutes(1)))
+        assertTrue(isTaskOverdue(task, now))
+        assertTrue(isTaskOverdue(task, now.plusMinutes(1)))
+        assertFalse(isTaskOverdue(task.copy(completed = true), now))
+        assertFalse(isTaskOverdue(task.copy(deadline = null), now))
+    }
+
     private val mondayClass = StudyCourse("math", "Maths", 1, 9 * 60, 10 * 60)
     private val monday = LocalDateTime.of(2026, 10, 5, 8, 30)
 

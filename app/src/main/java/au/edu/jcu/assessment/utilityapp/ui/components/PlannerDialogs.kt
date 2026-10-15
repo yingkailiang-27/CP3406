@@ -1,6 +1,8 @@
 package au.edu.jcu.assessment.utilityapp.ui.components
 
+import android.app.DatePickerDialog
 import android.app.TimePickerDialog
+import java.time.LocalDateTime
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -17,7 +19,11 @@ import au.edu.jcu.assessment.utilityapp.model.validateCourse
 import java.util.UUID
 
 @Composable
-fun AddTaskDialog(saving: Boolean, onDismiss: () -> Unit, onAdd: (String) -> Unit) {
+fun AddTaskDialog(saving: Boolean, onDismiss: () -> Unit, onAdd: (String, String) -> Unit) {
+    val context = LocalContext.current
+    val initial = remember { LocalDateTime.now().withHour(23).withMinute(59) }
+    var date by rememberSaveable { mutableStateOf(initial.toLocalDate().toString()) }
+    var minute by rememberSaveable { mutableIntStateOf(initial.hour * 60 + initial.minute) }
     var title by rememberSaveable { mutableStateOf("") }
     var attempted by rememberSaveable { mutableStateOf(false) }
     val error = when {
@@ -29,17 +35,35 @@ fun AddTaskDialog(saving: Boolean, onDismiss: () -> Unit, onAdd: (String) -> Uni
         onDismissRequest = { if (!saving) onDismiss() },
         title = { Text("Add a task") },
         text = {
-            OutlinedTextField(
-                value = title, onValueChange = { title = it }, label = { Text("Task title") },
-                enabled = !saving, singleLine = true, modifier = Modifier.fillMaxWidth(),
-                isError = attempted && error != null,
-                supportingText = { Text(if (attempted && error != null) error else "${title.trim().length}/120") }
-            )
+            Column(
+                modifier = Modifier.heightIn(max = 460.dp).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                OutlinedTextField(
+                    value = title, onValueChange = { title = it }, label = { Text("Task title") },
+                    enabled = !saving, singleLine = true, modifier = Modifier.fillMaxWidth(),
+                    isError = attempted && error != null,
+                    supportingText = { Text(if (attempted && error != null) error else "${title.trim().length}/120") }
+                )
+                OutlinedButton(enabled = !saving, onClick = {
+                    val selected = java.time.LocalDate.parse(date)
+                    DatePickerDialog(context, { _, year, month, day ->
+                        date = java.time.LocalDate.of(year, month + 1, day).toString()
+                    }, selected.year, selected.monthValue - 1, selected.dayOfMonth).show()
+                }) { Text("Due date: $date") }
+                OutlinedButton(enabled = !saving, onClick = {
+                    TimePickerDialog(context, { _, hour, selectedMinute ->
+                        minute = hour * 60 + selectedMinute
+                    }, minute / 60, minute % 60, true).show()
+                }) { Text("Due time: ${minuteLabel(minute)}") }
+                Text("Deadline uses your device's local time.",
+                    style = MaterialTheme.typography.bodySmall)
+            }
         },
         confirmButton = {
             TextButton(enabled = !saving, onClick = {
                 attempted = true
-                if (error == null) onAdd(title.trim())
+                if (error == null) onAdd(title.trim(), "${date}T${minuteLabel(minute)}")
             }) { Text(if (saving) "Saving…" else "Add task") }
         },
         dismissButton = { TextButton(enabled = !saving, onClick = onDismiss) { Text("Cancel") } }

@@ -126,8 +126,8 @@ class PlannerViewModel(
         }
     }
 
-    fun addTask(title: String, onSuccess: () -> Unit) =
-        save("Task added.", onSuccess) { planner.addTask(title) }
+    fun addTask(title: String, deadline: String? = null, onSuccess: () -> Unit) =
+        save("Task added.", onSuccess) { planner.addTask(title, deadline) }
     fun toggleTask(id: String) = save { planner.toggleTask(id) }
     fun deleteTask(id: String) = save("Task deleted.") { planner.deleteTask(id) }
     fun addCourse(course: StudyCourse, onSuccess: () -> Unit) =

@@ -6,7 +6,16 @@ import java.time.LocalTime
 import java.time.temporal.ChronoUnit
 import java.util.Locale
 
-data class StudyTask(val id: String, val title: String, val completed: Boolean = false)
+data class StudyTask(
+    val id: String,
+    val title: String,
+    val completed: Boolean = false,
+    // ISO local date-time, for example 2026-10-20T23:59. Null supports older tasks.
+    val deadline: String? = null
+)
+
+fun isTaskOverdue(task: StudyTask, now: LocalDateTime): Boolean =
+    !task.completed && task.deadline?.let { !LocalDateTime.parse(it).isAfter(now) } == true
 
 /** Weekday follows ISO-8601: Monday = 1, Sunday = 7. Times use the device timezone. */
 data class StudyCourse(

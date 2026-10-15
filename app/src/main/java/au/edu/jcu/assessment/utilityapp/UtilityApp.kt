@@ -172,7 +172,9 @@ fun UtilityApp(viewModel: PlannerViewModel) {
         if (showTaskDialog) AddTaskDialog(
             saving = state.saving,
             onDismiss = { showTaskDialog = false },
-            onAdd = { title -> viewModel.addTask(title) { showTaskDialog = false } }
+            onAdd = { title, deadline ->
+                viewModel.addTask(title, deadline) { showTaskDialog = false }
+            }
         )
         if (showCourseDialog) AddCourseDialog(
             existing = state.snapshot.courses, saving = state.saving,

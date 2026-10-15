@@ -24,9 +24,9 @@ class PlannerViewModelTest {
     private class FakePlanner : PlannerRepository {
         override val snapshots = MutableStateFlow(PlannerSnapshot())
         var failWrite = false
-        override suspend fun addTask(title: String) {
+        override suspend fun addTask(title: String, deadline: String?) {
             if (failWrite) throw IOException("Disk unavailable")
-            snapshots.value = snapshots.value.copy(tasks = listOf(StudyTask("one", title)))
+            snapshots.value = snapshots.value.copy(tasks = listOf(StudyTask("one", title, deadline = deadline)))
         }
         override suspend fun toggleTask(id: String) { }
         override suspend fun deleteTask(id: String) { }

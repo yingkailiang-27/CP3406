@@ -84,11 +84,23 @@ fun UtilityScreen(
                                 else "Complete task: ${task.title}"
                         }
                     )
-                    Text(
-                        task.title, modifier = Modifier.weight(1f),
-                        textDecoration = if (task.completed) TextDecoration.LineThrough else TextDecoration.None,
-                        color = if (task.completed) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
-                    )
+                    Column(Modifier.weight(1f).padding(vertical = 8.dp)) {
+                        Text(
+                            task.title,
+                            textDecoration = if (task.completed) TextDecoration.LineThrough else TextDecoration.None,
+                            color = if (task.completed) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            task.deadline?.let {
+                                "Due: " + LocalDateTime.parse(it).format(
+                                    DateTimeFormatter.ofPattern("d MMM yyyy, HH:mm", Locale.ENGLISH))
+                            } ?: "No deadline set",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                        if (isTaskOverdue(task, now)) Text("Overdue",
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.labelMedium)
+                    }
                     IconButton(enabled = !state.saving, onClick = { onDeleteTask(task.id) }) {
                         Icon(Icons.Default.DeleteOutline, "Delete task: ${task.title}")
                     }

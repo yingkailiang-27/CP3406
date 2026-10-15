@@ -20,7 +20,7 @@ import kotlinx.coroutines.flow.map
 
 interface PlannerRepository {
     val snapshots: Flow<PlannerSnapshot>
-    suspend fun addTask(title: String)
+    suspend fun addTask(title: String, deadline: String? = null)
     suspend fun toggleTask(id: String)
     suspend fun deleteTask(id: String)
     suspend fun addCourse(course: StudyCourse)
@@ -54,11 +54,15 @@ class LocalPlannerRepository(
         }
     }
 
-    override suspend fun addTask(title: String) {
+    override suspend fun addTask(title: String, deadline: String?) {
         val clean = title.trim()
         require(clean.isNotEmpty()) { "Enter a task title." }
         require(clean.length <= 120) { "Use at most 120 characters for the task." }
-        mutate { it.copy(tasks = it.tasks + StudyTask(UUID.randomUUID().toString(), clean)) }
+        // Validate the stored format; equal or past deadlines are allowed.
+        deadline?.let { LocalDateTime.parse(it) }
+        mutate { it.copy(tasks = it.tasks + StudyTask(
+            UUID.randomUUID().toString(), clean, deadline = deadline
+        )) }
     }
 
     override suspend fun toggleTask(id: String) = mutate { snapshot ->

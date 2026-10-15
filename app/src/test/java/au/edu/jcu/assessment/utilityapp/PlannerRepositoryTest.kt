@@ -34,6 +34,29 @@ class PlannerRepositoryTest {
     }
     @After fun tearDown() = runBlocking { scope.coroutineContext[Job]!!.cancelAndJoin() }
 
+    @Test fun deadlinesAllowDuplicatesAndSurviveReload() = runBlocking {
+        val deadline = "2026-10-20T23:59"
+        repository.addTask("First", deadline)
+        repository.addTask("Second", deadline)
+        scope.coroutineContext[Job]!!.cancelAndJoin()
+        scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        repository = LocalPlannerRepository(PreferenceDataStoreFactory.create(
+            scope = scope, produceFile = { folder.root.resolve("test.preferences_pb") }
+        ))
+        val tasks = repository.snapshots.first().tasks
+        assertEquals(2, tasks.size)
+        assertTrue(tasks.all { it.deadline == deadline })
+    }
+
+    @Test fun legacyTaskWithoutDeadlineStillLoads() = runBlocking {
+        val json = """{"tasks":[{"id":"old","title":"Read","completed":false}],"courses":[],"settings":{}}"""
+        // Deserialize the same legacy shape used by the existing DataStore snapshot.
+        val snapshot = com.google.gson.Gson().fromJson(json,
+            au.edu.jcu.assessment.utilityapp.model.PlannerSnapshot::class.java)
+        assertNull(snapshot.tasks.single().deadline)
+        assertEquals("Read", snapshot.tasks.single().title)
+    }
+
     @Test fun taskCompletionAndUndoSurviveRepositoryReads() = runBlocking {
         repository.addTask("  Read lecture notes  ")
         val task = repository.snapshots.first().tasks.single()
