@@ -6,6 +6,41 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class PlannerRulesTest {
+    @Test fun summaryKeepsAllTiesAndIgnoresCompletedOrUndatedTasks() {
+        val first = StudyTask("first", "Read", deadline = "2026-10-20T12:00")
+        val tied = StudyTask("tied", "Write", deadline = "2026-10-20T12:00:00")
+        val later = StudyTask("later", "Revise", deadline = "2026-10-21T12:00")
+        val completed = StudyTask("done", "Done", true, "2026-10-19T12:00")
+        assertEquals(listOf(first, tied), earliestDeadlineTasks(listOf(
+            later, completed, StudyTask("none", "No date"), first, tied)))
+        assertEquals(listOf(later), earliestDeadlineTasks(listOf(first.copy(completed = true), later)))
+    }
+
+    @Test fun overdueDeadlineTakesPriorityAndEmptySummaryIsSafe() {
+        val overdue = StudyTask("old", "Overdue", deadline = "2026-10-19T12:00")
+        val future = StudyTask("future", "Future", deadline = "2026-10-21T12:00")
+        assertEquals(listOf(overdue), earliestDeadlineTasks(listOf(future, overdue)))
+        assertTrue(earliestDeadlineTasks(emptyList()).isEmpty())
+        assertTrue(earliestDeadlineTasks(listOf(StudyTask("none", "No date"),
+            overdue.copy(completed = true))).isEmpty())
+    }
+
+    @Test fun countdownRoundsFutureUpAndElapsedDownAtDeadlineBoundary() {
+        val deadline = LocalDateTime.of(2026, 10, 20, 12, 0)
+        assertEquals("Due in 1 min", deadlineCountdown(deadline, deadline.minusSeconds(1)))
+        assertEquals("Due in 2 min", deadlineCountdown(deadline, deadline.minusMinutes(1).minusNanos(1)))
+        assertEquals("Overdue by less than 1 min", deadlineCountdown(deadline, deadline))
+        assertEquals("Overdue by less than 1 min", deadlineCountdown(deadline, deadline.plusSeconds(59)))
+        assertEquals("Overdue by 1 min", deadlineCountdown(deadline, deadline.plusMinutes(1)))
+    }
+
+    @Test fun countdownFormatsHoursDaysAndCrossesMidnight() {
+        val now = LocalDateTime.of(2026, 10, 20, 23, 30)
+        assertEquals("Due in 1 h 30 min", deadlineCountdown(now.plusMinutes(90), now))
+        assertEquals("Due in 2 d 3 h", deadlineCountdown(now.plusDays(2).plusHours(3), now))
+        assertEquals("Overdue by 1 d 2 h", deadlineCountdown(now.minusDays(1).minusHours(2), now))
+    }
+
     @Test fun deadlineBoundaryAndCompletedTasks() {
         val now = LocalDateTime.of(2026, 10, 20, 23, 59)
         val task = StudyTask("task", "Read", deadline = now.toString())

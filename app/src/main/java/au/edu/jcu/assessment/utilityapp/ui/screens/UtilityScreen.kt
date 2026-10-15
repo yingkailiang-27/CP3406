@@ -49,6 +49,7 @@ fun UtilityScreen(
         if (snapshot.settings.showCourses) {
             item { NextClassCard(nextClass(snapshot.courses, now), now) }
         }
+        item { DeadlineSummaryCard(snapshot.tasks, now) }
         item {
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) {
                 Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -132,6 +133,47 @@ fun UtilityScreen(
         }
         if (snapshot.settings.showWeather) {
             item { WeatherCard(state.weather, snapshot.settings, onRefreshWeather) }
+        }
+    }
+}
+
+@Composable
+private fun DeadlineSummaryCard(tasks: List<StudyTask>, now: LocalDateTime) {
+    val urgentTasks = earliestDeadlineTasks(tasks)
+    val deadline = urgentTasks.firstOrNull()?.deadline?.let { LocalDateTime.parse(it) }
+    val overdue = deadline != null && !deadline.isAfter(now)
+    val containerColor = if (overdue) MaterialTheme.colorScheme.errorContainer
+        else MaterialTheme.colorScheme.tertiaryContainer
+    val contentColor = if (overdue) MaterialTheme.colorScheme.onErrorContainer
+        else MaterialTheme.colorScheme.onTertiaryContainer
+
+    Card(colors = CardDefaults.cardColors(
+        containerColor = containerColor, contentColor = contentColor
+    )) {
+        Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(if (overdue) "OVERDUE DEADLINE" else "NEXT DEADLINE",
+                style = MaterialTheme.typography.labelLarge)
+            if (deadline == null) {
+                Text(if (tasks.any { !it.completed }) "No deadlines set" else "No unfinished tasks",
+                    style = MaterialTheme.typography.titleLarge)
+                Text(if (tasks.any { !it.completed })
+                    "Tasks without a deadline remain in your list below."
+                    else "Add a task with a deadline to see it here.",
+                    style = MaterialTheme.typography.bodyMedium)
+            } else {
+                Text(deadlineCountdown(deadline, now),
+                    style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
+                Text("Due: " + deadline.format(
+                    DateTimeFormatter.ofPattern("d MMM yyyy, HH:mm", Locale.ENGLISH)),
+                    style = MaterialTheme.typography.bodyMedium)
+                if (urgentTasks.size > 1) Text("${urgentTasks.size} tasks share this deadline",
+                    style = MaterialTheme.typography.labelLarge)
+                urgentTasks.forEach { task ->
+                    Text(task.title, style = MaterialTheme.typography.titleMedium)
+                }
+                if (overdue) Text("Complete or delete these tasks in the list below to reveal the next deadline.",
+                    style = MaterialTheme.typography.bodySmall)
+            }
         }
     }
 }

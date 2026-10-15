@@ -1,5 +1,6 @@
 package au.edu.jcu.assessment.utilityapp.model
 
+import java.time.Duration
 import java.time.DayOfWeek
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -16,6 +17,30 @@ data class StudyTask(
 
 fun isTaskOverdue(task: StudyTask, now: LocalDateTime): Boolean =
     !task.completed && task.deadline?.let { !LocalDateTime.parse(it).isAfter(now) } == true
+
+/** Earliest unfinished deadline wins, including overdue tasks. Keep all tied tasks. */
+fun earliestDeadlineTasks(tasks: List<StudyTask>): List<StudyTask> {
+    val candidates = tasks.filter { !it.completed && it.deadline != null }
+    val earliest = candidates.minOfOrNull { LocalDateTime.parse(it.deadline!!) }
+        ?: return emptyList()
+    return candidates.filter { LocalDateTime.parse(it.deadline!!) == earliest }
+}
+
+fun deadlineCountdown(deadline: LocalDateTime, now: LocalDateTime): String {
+    val overdue = !deadline.isAfter(now)
+    val duration = if (overdue) Duration.between(deadline, now) else Duration.between(now, deadline)
+    // Round remaining time up so a future deadline never looks already due.
+    // Round elapsed time down so we do not overstate how late a task is.
+    val minutes = duration.toMinutes() +
+        if (!overdue && (duration.seconds % 60 != 0L || duration.nano != 0)) 1 else 0
+    val label = when {
+        minutes == 0L -> "less than 1 min"
+        minutes < 60 -> "$minutes min"
+        minutes < 1440 -> "${minutes / 60} h ${minutes % 60} min"
+        else -> "${minutes / 1440} d ${minutes % 1440 / 60} h"
+    }
+    return if (overdue) "Overdue by $label" else "Due in $label"
+}
 
 /** Weekday follows ISO-8601: Monday = 1, Sunday = 7. Times use the device timezone. */
 data class StudyCourse(
